@@ -29,6 +29,7 @@ parser.add_argument('-du', '--duration', default=None, help='Optionally input du
 parser.add_argument('-mw', '--mask_width', default=1.3, help='Sets mask width. Default is 1.3.')
 parser.add_argument('-s', '--show_plots', default='True', help='Set whether to show non-problem-time plots.')
 parser.add_argument('--dont_bin', default='False', help='if True, then jump time plots data wont be binned.')
+parser.add_argument('--save_transit_data', default='False', help='if True, then will save data on each transit')
 
 
 args = vars(parser.parse_args())
@@ -47,7 +48,7 @@ input_duration = args['duration']
 input_mask_width = float(args['mask_width'])
 input_show_plots = ast.literal_eval(args['show_plots'])
 input_dont_bin = ast.literal_eval(args['dont_bin'])
-
+input_save_transit_data = ast.literal_eval(args['save_transit_data'])
 
 
 
@@ -86,6 +87,12 @@ path = os.path.join(input_dir, foldername)
 os.makedirs(path, exist_ok=True)
 
 
+if input_save_transit_data:
+    transit_data_name = path+'/'+flux_type+'_'+'transit_'
+else:
+    transit_data_name = None
+
+
 # check if we should run both pdc and sap flux
 if flux_type == 'both':
 
@@ -97,7 +104,7 @@ if flux_type == 'both':
     pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
     pdc_duration, pdc_cadence]]  = \
     find_sap_and_pdc_flux_jumps(input_id, path + '/', input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
-    user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, dont_bin=input_dont_bin) 
+    user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, dont_bin=input_dont_bin, data_name = transit_data_name) 
 
 
     
@@ -120,7 +127,7 @@ elif flux_type == 'pdc':
         TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
-        mask_width=input_mask_width, dont_bin=input_dont_bin) 
+        mask_width=input_mask_width, dont_bin=input_dont_bin, data_name = transit_data_name) 
 
     
 
@@ -139,7 +146,7 @@ elif flux_type == 'sap':
         TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
-        mask_width=input_mask_width, dont_bin=input_dont_bin) 
+        mask_width=input_mask_width, dont_bin=input_dont_bin, data_name = transit_data_name) 
 
 
 
@@ -157,7 +164,7 @@ elif flux_type == 'qlp':
         TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
-        mask_width=input_mask_width, dont_bin=input_dont_bin) 
+        mask_width=input_mask_width, dont_bin=input_dont_bin, data_name = transit_data_name) 
 
     
 

@@ -182,7 +182,7 @@ def get_transit_info(object_id):
 
             
 def get_light_curve(object_id, flux_type, TESS = False, Kepler = False, 
-                    user_periods = None, user_t0s = None, user_durations = None,
+                    user_period = None, user_t0 = None, user_duration = None,
                     planet_number = 1, mask_width = 1.3):
     
 
@@ -190,6 +190,7 @@ def get_light_curve(object_id, flux_type, TESS = False, Kepler = False,
     if type(transit_info) == None:
         return None
     
+    print('NASA Exoplanet Archive planet parameters:')
     print('planet #,[    tic_id      ,    t0 [BJD]    ,  P [days] , tdur [hrs]')
     transit_info_list = transit_info.astype(str).values.tolist()
     for ii in range(0, len(transit_info_list)):
@@ -199,22 +200,31 @@ def get_light_curve(object_id, flux_type, TESS = False, Kepler = False,
     tic_id = str(transit_info['tic_id'].values[0])
     
     
-    if user_periods != None:
-        periods = user_periods
-        print("using periods = " + str(user_periods))
+    if user_period != None:
+        periods = np.array(transit_info['period [days]'].values, dtype = float)
+        periods[planet_number-1] = user_period
+
+        print("using periods = " + str(periods))
+
     else:
         periods = np.array(transit_info['period [days]'].values, dtype = float)
 
         
-    if user_t0s != None:
-        t0s = user_t0s
-        print("using t0s = " + str(user_t0s))
+    if user_t0 != None:
+        t0s = np.array(transit_info['t0 [BJD]'].values, dtype = float)
+        t0s[planet_number-1] = user_t0
+
+        print("using t0s = " + str(t0s))
+
     else:
         t0s = np.array(transit_info['t0 [BJD]'].values, dtype = float)
 
-    if user_durations != None:
-        durations = user_durations
-        print("using durations = " + str(user_durations))
+    if user_duration != None:
+        durations = np.array(transit_info['duration [hours]'].values, dtype = float)
+        durations[planet_number-1] = user_duration
+
+        print("using durations = " + str(durations))
+        
     else:
         durations = np.array(transit_info['duration [hours]'].values, dtype = float)
     

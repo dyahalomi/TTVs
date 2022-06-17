@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import exoplanet as xo
+import pandas as pd
 
 from scipy.interpolate import interp1d
 from matplotlib.widgets import Slider, Button
@@ -115,7 +116,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
 
 
-def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, object_id, problem_times_input=None, dont_bin=False):
+def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, object_id, problem_times_input=None, dont_bin=False, data_name=None):
     #xs = times
     #ys = fluxes
     #mask = masks for transit
@@ -138,10 +139,28 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
 
 
 
+
+
         slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, object_id, problem_times_input=problem_times_input, dont_bin=dont_bin)
         sliders.append(slider)
         buttons.append(button)
         problem_times.append(problem_times_epoch)
+
+
+        if data_name is not None:
+            # saving detrend data as csv
+            detrend_dict = {}
+
+            detrend_dict["time"] = xs
+            detrend_dict["flux"] = ys
+            detrend_dict["mask"] = mask
+                
+            detrend_df = pd.DataFrame(detrend_dict)
+
+            print('saving data to ' + data_name+str(ii+1)+'.csv')
+
+            detrend_df.to_csv(data_name+str(ii+1)+'.csv')
+
 
         plt.show()
     
@@ -491,6 +510,9 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
     fig.savefig(figname)
     
     return None
+
+
+
 
 
 
