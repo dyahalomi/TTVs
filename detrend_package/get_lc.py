@@ -44,6 +44,7 @@ def tic_id_from_exoplanet_archive(other_id):
     a = "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=toi&select=toipfx,tid,pl_tranmid,pl_orbper,pl_trandurh&format=csv"
 
     exoplanets = pd.read_csv(a)
+    print(exoplanets)
 
     #rename columns
     column_dict = {
@@ -64,9 +65,12 @@ def tic_id_from_exoplanet_archive(other_id):
     other_id = other_id.lstrip('toi- TOI')
     other_id = 'TOI-' + other_id # there's probably a smarter way to do this
     
-    
+
+
     tic_id = exoplanets['tic_id'].loc[exoplanets['toi_host'] == other_id]
-    
+
+
+
     return tic_id.values[0]
 
 
@@ -224,10 +228,21 @@ def get_light_curve(object_id, flux_type, TESS = False, Kepler = False,
         durations[planet_number-1] = user_duration
 
         print("using durations = " + str(durations))
+
+
         
     else:
         durations = np.array(transit_info['duration [hours]'].values, dtype = float)
     
+    
+    
+
+    #if no duration values input, just assume a 2 hour duration
+    for ii in range(0, len(durations)):
+        if np.isnan(durations[ii]):
+            print('no duration information on exoplanet archive for the ' + str(ii+1) + 'th planet')
+            print('assuming 2 hours for '+ str(ii+1) + 'th planet duration!')
+            durations[ii] = 2.
     
     print('')
     print('')
@@ -421,5 +436,3 @@ def get_light_curve(object_id, flux_type, TESS = False, Kepler = False,
         np.array(xs), np.array(ys), np.array(ys_err), mask, mask_fitted_planet, \
         np.array(t0s_in_data), period, duration, quarters, crowding, flux_fraction
     
-    
-

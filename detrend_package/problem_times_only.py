@@ -137,7 +137,6 @@ elif flux_type == 'pdc':
 # check if we should run just sap
 elif flux_type == 'sap':
 
-
     #pulls in light curve
     [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
     sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \

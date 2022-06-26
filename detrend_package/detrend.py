@@ -10,204 +10,246 @@ from manipulate_data import *
 from outlier_rejection import *
 
 def trim_jump_times(x, y, yerr, mask, mask_fitted_planet, t0s, period, jump_times):
-    #x = time 
-    #y = flux 
-    #yerr = flux error
-    #mask = mask
-    #t0s = midtransits
-    #period = planet period to define plotting limit
-    #jump_times = jump times to trim data around (one before and one after each transit)
-    
+	#x = time 
+	#y = flux 
+	#yerr = flux error
+	#mask = mask
+	#t0s = midtransits
+	#period = planet period to define plotting limit
+	#jump_times = jump times to trim structured noise
+	
    
-    if jump_times != []:
-        x_epochs = []
-        y_epochs = []
-        yerr_epochs = []
-        mask_epochs = []
-        mask_fitted_planet_epochs = []
-    
-        for ii in range(0, len(jump_times)-1):
-            jump_start = jump_times[ii]
-            jump_end = jump_times[ii+1]
-            
-
-            if ii % 2 == 0:
-                jump_start = find_nearest(x, jump_start)
-                jump_end = find_nearest(x, jump_end)
-                
-
-                epoch_split = [jump_start, jump_end]
-                start_index = int(np.where(x == epoch_split[0])[0])
-                end_index = int(np.where(x == epoch_split[1])[0])
-
-                x_epochs.append(x[start_index:end_index])
-                y_epochs.append(y[start_index:end_index])
-                yerr_epochs.append(yerr[start_index:end_index])
-                mask_epochs.append(mask[start_index:end_index])
-                mask_fitted_planet_epochs.append(mask_fitted_planet[start_index:end_index])
-                
-
-        x_epochs = np.array(x_epochs, dtype=object)
-        y_epochs = np.array(y_epochs, dtype=object)
-        yerr_epochs = np.array(yerr_epochs, dtype=object)
-        mask_epochs = np.array(mask_epochs, dtype=object)
-        mask_fitted_planet_epochs = np.array(mask_fitted_planet_epochs, dtype=object)
-
-    else:
-        x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs = \
-        split_around_transits(x, y, yerr, mask, mask_fitted_planet, t0s, 1./2., period)
-    
+	if jump_times != []:
+		x_epochs = []
+		y_epochs = []
+		yerr_epochs = []
+		mask_epochs = []
+		mask_fitted_planet_epochs = []
+	
+		# making this so that minimum of two jump times per epoch isn't needed
 
 
-    
-    return x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs
+		x_transits, y_transits, yerr_transits, mask_transits, mask_fitted_planet_transits = split_around_transits(x, y, yerr, 
+																									mask, mask_fitted_planet,
+																									t0s, 1./2., period)
+		if len(mask_transits)==1:
+			mask_transits = np.array(mask_transits, dtype=bool)
+			mask_fitted_planet_transits = np.array(mask_fitted_planet_transits, dtype=bool)
+
+		for ii in range(0, len(t0s)):
+			t0 = t0s[ii]
+			xs = x_transits[ii]
+			ys = y_transits[ii]
+			yerrs = yerr_transits[ii]
+			masks = mask_transits[ii]
+			mask_fitted_planets = mask_fitted_planet_transits[ii]
+			
+			epoch_jump_times = []
+			for j in range(len(jump_times)):
+				if jump_times[j] >= xs[0] or jump_times[j] <= xs[-1]: # if jump time falls within time range of epoch
+					epoch_jump_times.append(jump_times[j])
+
+			# should be in time order anyway
+			# there should be a max of two per epoch
+			if len(epoch_jump_times) == 2 : # if we have two jump times in this epoch
+				jump_start = find_nearest(xs, epoch_jump_times[0]) # selecting all data in between jump times
+				jump_end = find_nearest(xs, epoch_jump_times[1])
+
+			elif len(epoch_jump_times) == 1:
+				# first make sure t0 is intact
+
+				if t0 < epoch_jump_times[0]:
+					jump_start = xs[0]
+					jump_end = find_nearest(xs,epoch_jump_times[0]) # selecting data to left of jump time
+				elif t0 > epoch_jump_times[0]: # t0 is intact
+					jump_start = find_nearest(xs, epoch_jump_times[0])
+					jump_end = xs[-1] # selecting all data to right of jump time
+				else: # t0 = jump time?? weird
+					raise Exception('Missing about half the transit. Go back and relabel?')
+					return None
+				# not sure how to check whether transit is cut off without duration; write in later
+
+			elif len(epoch_jump_times) == 0: # no jump times for this epoch
+				jump_start = xs[0] # selecting all data
+				jump_end = xs[-1]
+
+			else: # ????? too many problem times
+				raise Exception('Too many problem times for epoch '+ str(ii+1) + '. Go back and relabel?')
+				return None
+
+			# # assuming all went well
+			epoch_split = [jump_start, jump_end]
+			start_index = int(np.where(xs == epoch_split[0])[0])
+			end_index = int(np.where(x == epoch_split[1])[0])
+
+			# now to append current epoch's trimmed (if applicable) data to epoch arrays
+			x_epochs.append(xs[start_index:end_index])
+			y_epochs.append(ys[start_index:end_index])
+			yerr_epochs.append(yerrs[start_index:end_index])
+			mask_epochs.append(masks[start_index:end_index])
+			mask_fitted_planet_epochs.append(mask_fitted_planets[start_index:end_index])
+
+				
+		# wrapping it all up!
+		x_epochs = np.array(x_epochs, dtype=object)
+		y_epochs = np.array(y_epochs, dtype=object)
+		yerr_epochs = np.array(yerr_epochs, dtype=object)
+		mask_epochs = np.array(mask_epochs, dtype=object)
+		mask_fitted_planet_epochs = np.array(mask_fitted_planet_epochs, dtype=object)
+
+	else:
+		x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs = \
+		split_around_transits(x, y, yerr, mask, mask_fitted_planet, t0s, 1./2., period)
+	
+	
+	return x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs
 
 def get_detrended_lc(y, detrending_model):
-    '''
-    input:
-    y = light curve
-    detrending model = stellar detrending model evaluated at same time as fluxes
-    
-    returns:
-    detrended_lc = detrended light curve evaluated at same time as fluxes
-    
-    '''
-    detrended_lc = (((y + 1) / (detrending_model + 1)) - 1)
-    
-    return np.array(detrended_lc)
+	'''
+	input:
+	y = light curve
+	detrending model = stellar detrending model evaluated at same time as fluxes
+	
+	returns:
+	detrended_lc = detrended light curve evaluated at same time as fluxes
+	
+	'''
+	detrended_lc = (((y + 1) / (detrending_model + 1)) - 1)
+	
+	return np.array(detrended_lc)
 
 def remove_trim_times(x, y, yerr, trim_times):
-    
-    for trim in trim_times:
-        trim_min = find_nearest(x, trim[0]) 
-        trim_max = find_nearest(x, trim[1]) 
-        
-        index_min = int(np.where(x == trim_min)[0])
-        index_max = int(np.where(x == trim_max)[0])
-        
-        indices = np.arange(index_min, index_max)
+	
+	for trim in trim_times:
+		trim_min = find_nearest(x, trim[0]) 
+		trim_max = find_nearest(x, trim[1]) 
+		
+		index_min = int(np.where(x == trim_min)[0])
+		index_max = int(np.where(x == trim_max)[0])
+		
+		indices = np.arange(index_min, index_max)
 
-        
-        x = np.delete(x, indices)
-        y = np.delete(y, indices)
-        yerr = np.delete(yerr, indices)
-        
-    return x, y, yerr
+		
+		x = np.delete(x, indices)
+		y = np.delete(y, indices)
+		yerr = np.delete(yerr, indices)
+		
+	return x, y, yerr
 
 
 
 def add_nans_for_missing_data(sap_x_local, sap_detrended_lcs, sap_yerr_local, sap_mask_local, sap_mask_fitted_planet_local, 
-                              pdc_x_local, pdc_detrended_lcs, pdc_yerr_local, pdc_mask_local, pdc_mask_fitted_planet_local):
-    
-    
-    print('pdc length in: ', str(len(pdc_x_local)))
-    print('sap length in: ', str(len(sap_x_local)))
-    print('---')
-    
-    
-    for ii in range(0, len(pdc_x_local)):
-        time = pdc_x_local[ii]
-        yerr = pdc_yerr_local[ii]
-        mask = pdc_mask_local[ii]
-        mask_fitted_planet = pdc_mask_fitted_planet_local[ii]
-        if time not in sap_x_local:
-            for kk in range(0, len(sap_x_local)):
-                if sap_x_local[kk] > time:
-                    sap_x_local = np.insert(sap_x_local, kk, time)
-                    sap_yerr_local = np.insert(sap_yerr_local, kk, yerr)
-                    sap_mask_local = np.insert(sap_mask_local, kk, mask)
-                    sap_mask_fitted_planet_local = np.insert(sap_mask_fitted_planet_local, kk, mask_fitted_planet)
-                    for jj in range(0, len(sap_detrended_lcs)):
-                        sap_detrended_lcs[jj] = np.insert(sap_detrended_lcs[jj], kk, np.nan)
-                    
-                    break
-                
-                elif kk + 1  == len(sap_x_local):
-                    sap_x_local = np.insert(sap_x_local, kk+1, time)
-                    sap_yerr_local = np.insert(sap_yerr_local, kk+1, yerr)
-                    sap_mask_local = np.insert(sap_mask_local, kk+1, mask)
-                    sap_mask_fitted_planet_local = np.insert(sap_mask_fitted_planet_local, kk+1, mask_fitted_planet)
-                    for jj in range(0, len(sap_detrended_lcs)):
-                        sap_detrended_lcs[jj] = np.insert(sap_detrended_lcs[jj], kk+1, np.nan)
-                    
-                    break
-            
-            
-    
-    
-    for ii in range(0, len(sap_x_local)):
-        time = sap_x_local[ii]
-        yerr = sap_yerr_local[ii]
-        mask = sap_mask_local[ii]
-        mask_fitted_planet = sap_mask_fitted_planet_local[ii]
-        if time not in pdc_x_local:
-            for kk in range(0, len(pdc_x_local)):
-                if pdc_x_local[kk] > time:
-                    pdc_x_local = np.insert(pdc_x_local, kk, time)
-                    pdc_yerr_local = np.insert(pdc_yerr_local, kk, yerr)
-                    pdc_mask_local = np.insert(pdc_mask_local, kk, mask)
-                    pdc_mask_fitted_planet_local = np.insert(pdc_mask_fitted_planet_local, kk, mask_fitted_planet)
-                    for jj in range(0, len(pdc_detrended_lcs)):
-                        pdc_detrended_lcs[jj] = np.insert(pdc_detrended_lcs[jj], kk, np.nan)
-                    
-                    break
-                
-                
-                elif kk + 1 == len(pdc_x_local):
-                    pdc_x_local = np.insert(pdc_x_local, kk+1, time)
-                    pdc_yerr_local = np.insert(pdc_yerr_local, kk+1, yerr)
-                    pdc_mask_local = np.insert(pdc_mask_local, kk+1, mask)
-                    pdc_mask_fitted_planet_local = np.insert(pdc_mask_fitted_planet_local, kk+1, mask_fitted_planet)
-                    for jj in range(0, len(pdc_detrended_lcs)):
-                        pdc_detrended_lcs[jj] = np.insert(pdc_detrended_lcs[jj], kk+1, np.nan)
-                    
-                    break
+							  pdc_x_local, pdc_detrended_lcs, pdc_yerr_local, pdc_mask_local, pdc_mask_fitted_planet_local):
+	
+	
+	print('pdc length in: ', str(len(pdc_x_local)))
+	print('sap length in: ', str(len(sap_x_local)))
+	print('---')
+	
+	
+	for ii in range(0, len(pdc_x_local)):
+		time = pdc_x_local[ii]
+		yerr = pdc_yerr_local[ii]
+		mask = pdc_mask_local[ii]
+		mask_fitted_planet = pdc_mask_fitted_planet_local[ii]
+		if time not in sap_x_local:
+			for kk in range(0, len(sap_x_local)):
+				if sap_x_local[kk] > time:
+					sap_x_local = np.insert(sap_x_local, kk, time)
+					sap_yerr_local = np.insert(sap_yerr_local, kk, yerr)
+					sap_mask_local = np.insert(sap_mask_local, kk, mask)
+					sap_mask_fitted_planet_local = np.insert(sap_mask_fitted_planet_local, kk, mask_fitted_planet)
+					for jj in range(0, len(sap_detrended_lcs)):
+						sap_detrended_lcs[jj] = np.insert(sap_detrended_lcs[jj], kk, np.nan)
+					
+					break
+				
+				elif kk + 1  == len(sap_x_local):
+					sap_x_local = np.insert(sap_x_local, kk+1, time)
+					sap_yerr_local = np.insert(sap_yerr_local, kk+1, yerr)
+					sap_mask_local = np.insert(sap_mask_local, kk+1, mask)
+					sap_mask_fitted_planet_local = np.insert(sap_mask_fitted_planet_local, kk+1, mask_fitted_planet)
+					for jj in range(0, len(sap_detrended_lcs)):
+						sap_detrended_lcs[jj] = np.insert(sap_detrended_lcs[jj], kk+1, np.nan)
+					
+					break
+			
+			
+	
+	
+	for ii in range(0, len(sap_x_local)):
+		time = sap_x_local[ii]
+		yerr = sap_yerr_local[ii]
+		mask = sap_mask_local[ii]
+		mask_fitted_planet = sap_mask_fitted_planet_local[ii]
+		if time not in pdc_x_local:
+			for kk in range(0, len(pdc_x_local)):
+				if pdc_x_local[kk] > time:
+					pdc_x_local = np.insert(pdc_x_local, kk, time)
+					pdc_yerr_local = np.insert(pdc_yerr_local, kk, yerr)
+					pdc_mask_local = np.insert(pdc_mask_local, kk, mask)
+					pdc_mask_fitted_planet_local = np.insert(pdc_mask_fitted_planet_local, kk, mask_fitted_planet)
+					for jj in range(0, len(pdc_detrended_lcs)):
+						pdc_detrended_lcs[jj] = np.insert(pdc_detrended_lcs[jj], kk, np.nan)
+					
+					break
+				
+				
+				elif kk + 1 == len(pdc_x_local):
+					pdc_x_local = np.insert(pdc_x_local, kk+1, time)
+					pdc_yerr_local = np.insert(pdc_yerr_local, kk+1, yerr)
+					pdc_mask_local = np.insert(pdc_mask_local, kk+1, mask)
+					pdc_mask_fitted_planet_local = np.insert(pdc_mask_fitted_planet_local, kk+1, mask_fitted_planet)
+					for jj in range(0, len(pdc_detrended_lcs)):
+						pdc_detrended_lcs[jj] = np.insert(pdc_detrended_lcs[jj], kk+1, np.nan)
+					
+					break
 
-    
-                    
-    
-    print('pdc length out: ', str(len(pdc_x_local)))
-    print('sap length out: ', str(len(sap_x_local)))
-    
+	
+					
+	
+	print('pdc length out: ', str(len(pdc_x_local)))
+	print('sap length out: ', str(len(sap_x_local)))
+	
 
-            
-    print('')
-    print('')
-    print('')
-    if (pdc_x_local == sap_x_local).all():
-        x_detrended = pdc_x_local
-        
-    else:
-        print("ERROR, pdc and sap x arrays aren't the same")
-        
+			
+	print('')
+	print('')
+	print('')
+	if (pdc_x_local == sap_x_local).all():
+		x_detrended = pdc_x_local
+		
+	else:
+		print("ERROR, pdc and sap x arrays aren't the same")
+		
 
-    
-    yerr_detrended = np.nanmean([pdc_yerr_local, sap_yerr_local], axis=0)
-    
-    if (pdc_mask_local == sap_mask_local).all():
-        mask_detrended = pdc_mask_local
-        
-    else:
-        for ii in range(0, len(pdc_mask_local)):
-            if pdc_mask_local[ii] != sap_mask_local[ii]:
-                print(pdc_x_local[ii], pdc_mask_local[ii])
-                print(sap_x_local[ii], sap_mask_local[ii])
-                    
-                print('')
-        print("ERROR, pdc and sap mask arrays aren't the same")
-        
-        
-    
-    if (pdc_mask_fitted_planet_local == sap_mask_fitted_planet_local).all():
-        mask_fitted_planet_detrended = pdc_mask_fitted_planet_local
-        
-    else:
-        print("ERROR, pdc and sap mask for fitted planet arrays aren't the same")
-        
-    
-                
-       
-    return(x_detrended, sap_detrended_lcs, pdc_detrended_lcs, yerr_detrended, mask_detrended, mask_fitted_planet_detrended)
+	
+	yerr_detrended = np.nanmean([pdc_yerr_local, sap_yerr_local], axis=0)
+	
+	if (pdc_mask_local == sap_mask_local).all():
+		mask_detrended = pdc_mask_local
+		
+	else:
+		for ii in range(0, len(pdc_mask_local)):
+			if pdc_mask_local[ii] != sap_mask_local[ii]:
+				print(pdc_x_local[ii], pdc_mask_local[ii])
+				print(sap_x_local[ii], sap_mask_local[ii])
+					
+				print('')
+		print("ERROR, pdc and sap mask arrays aren't the same")
+		
+		
+	
+	if (pdc_mask_fitted_planet_local == sap_mask_fitted_planet_local).all():
+		mask_fitted_planet_detrended = pdc_mask_fitted_planet_local
+		
+	else:
+		print("ERROR, pdc and sap mask for fitted planet arrays aren't the same")
+		
+	
+				
+	   
+	return(x_detrended, sap_detrended_lcs, pdc_detrended_lcs, yerr_detrended, mask_detrended, mask_fitted_planet_detrended)
 
 
 
@@ -216,36 +258,38 @@ def add_nans_for_missing_data(sap_x_local, sap_detrended_lcs, sap_yerr_local, sa
 def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, problem_times,
 	t0s, period, duration, cadence, save_to_directory, show_plots):
 
-
+	print(len(x_epochs))
+	
 	x_trimmed, y_trimmed, yerr_trimmed, mask_trimmed, mask_fitted_planet_trimmed = \
 	trim_jump_times(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, t0s, period, problem_times)
+	# oh god oh fuck i hope this worked
 
 	#### polyam, gp, cofiam friendly mask arrays ####
 
 	friendly_mask_trimmed = []
 	for boolean in range(len(mask_trimmed)):
-	    friendly_boolean = mask_trimmed[boolean].astype(bool)
-	    friendly_mask_trimmed.append(friendly_boolean)
+		friendly_boolean = mask_trimmed[boolean].astype(bool)
+		friendly_mask_trimmed.append(friendly_boolean)
 	
 	friendly_mask_fitted_planet_trimmed = []
 	for boolean in range(len(mask_fitted_planet_trimmed)):
-	    friendly_boolean = mask_fitted_planet_trimmed[boolean].astype(bool)
-	    friendly_mask_fitted_planet_trimmed.append(friendly_boolean)
+		friendly_boolean = mask_fitted_planet_trimmed[boolean].astype(bool)
+		friendly_mask_fitted_planet_trimmed.append(friendly_boolean)
 
 	friendly_x_trimmed = []
 	for time_array in range(len(x_trimmed)):
-	    friendly_time_array = x_trimmed[time_array].astype(float)
-	    friendly_x_trimmed.append(friendly_time_array)
+		friendly_time_array = x_trimmed[time_array].astype(float)
+		friendly_x_trimmed.append(friendly_time_array)
 
 	friendly_y_trimmed = []
 	for flux_array in range(len(y_trimmed)):
-	    friendly_flux_array = y_trimmed[flux_array].astype(float)
-	    friendly_y_trimmed.append(friendly_flux_array)
+		friendly_flux_array = y_trimmed[flux_array].astype(float)
+		friendly_y_trimmed.append(friendly_flux_array)
 
 	friendly_yerr_trimmed = []
 	for flux_err_array in range(len(yerr_trimmed)):
-	    friendly_flux_err_array = yerr_trimmed[flux_err_array].astype(float)
-	    friendly_yerr_trimmed.append(friendly_flux_err_array)
+		friendly_flux_err_array = yerr_trimmed[flux_err_array].astype(float)
+		friendly_yerr_trimmed.append(friendly_flux_err_array)
 
 	#################################################
 
@@ -254,11 +298,11 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	local_x_epochs, local_y_epochs, local_yerr_epochs, \
 	local_mask_epochs, local_mask_fitted_planet_epochs = \
 	split_around_transits(np.concatenate(x_trimmed, axis=0, dtype=object), 
-	                      np.concatenate(y_trimmed, axis=0, dtype=object),
-	                      np.concatenate(yerr_trimmed, axis=0, dtype=object),
-	                      np.concatenate(mask_trimmed, axis=0, dtype=object),
-	                      np.concatenate(mask_fitted_planet_trimmed, axis=0, dtype=object),
-	                      t0s, float(6*duration/(24.))/period, period)
+						  np.concatenate(y_trimmed, axis=0, dtype=object),
+						  np.concatenate(yerr_trimmed, axis=0, dtype=object),
+						  np.concatenate(mask_trimmed, axis=0, dtype=object),
+						  np.concatenate(mask_fitted_planet_trimmed, axis=0, dtype=object),
+						  t0s, float(6*duration/(24.))/period, period)
 
 	local_x = np.concatenate(local_x_epochs, axis=0, dtype=object)
 	local_y = np.concatenate(local_y_epochs, axis=0, dtype=object)
@@ -274,9 +318,9 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	print('')
 	print('detrending via the local method')
 	local_detrended = \
-	local_method(x_trimmed, y_trimmed, yerr_trimmed, 
-	             mask_trimmed, mask_fitted_planet_trimmed,
-	             t0s, duration, period)
+	local_method(friendly_x_trimmed, friendly_y_trimmed, friendly_yerr_trimmed, 
+				 friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
+				 t0s, duration, period)
 
 
 	# remove outliers in unmasked local detrended lc
@@ -284,7 +328,7 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	reject_outliers_everywhere(local_x, local_detrended, local_yerr, 5*cadence, 5, 10)
 
 	plot_individual_outliers(local_x, local_detrended, local_x_no_outliers, local_detrended_no_outliers,
-	                         t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
+							 t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
 
 	end = time.time()
 	print('local detrending took ' + str(np.round(end - start, 2)) + ' seconds')
@@ -302,8 +346,8 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	print('detrending via the polyAM method')
 	poly_detrended, poly_DWs = \
 	polynomial_method(friendly_x_trimmed, friendly_y_trimmed, friendly_yerr_trimmed, 
-	                  friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
-	                  t0s, duration, period, local_x_epochs)
+					  friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
+					  t0s, duration, period, local_x_epochs)
 
 
 	# remove outliers in unmasked poly detrended lc
@@ -311,7 +355,7 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	reject_outliers_everywhere(local_x, poly_detrended, local_yerr, 5*cadence, 5, 10)
 
 	plot_individual_outliers(local_x, poly_detrended, poly_x_no_outliers, poly_detrended_no_outliers,
-	                         t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
+							 t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
 
 	end = time.time()
 	print('polyAM detrending took ' + str(np.round(end - start, 2)) + ' seconds')
@@ -330,15 +374,15 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	print('detrending via the GP method')
 	gp_detrended = \
 	gp_method(friendly_x_trimmed, friendly_y_trimmed, friendly_yerr_trimmed, 
-	          friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
-	          t0s, duration, period)
+			  friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
+			  t0s, duration, period)
 
 	# remove outliers in unmasked gp detrended lc
 	gp_x_no_outliers, gp_detrended_no_outliers = \
 	reject_outliers_everywhere(local_x, gp_detrended, local_yerr, 5*cadence, 5, 10)
 
 	plot_individual_outliers(local_x, gp_detrended, gp_x_no_outliers, gp_detrended_no_outliers,
-	                         t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
+							 t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
 
 	end = time.time()
 	print('GP detrending took ' + str(np.round(end - start, 2)) + ' seconds')
@@ -356,15 +400,15 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 	print('detrending via the CoFiAM method')
 	cofiam_detrended, cofiam_DWs = \
 	cofiam_method(friendly_x_trimmed, friendly_y_trimmed, friendly_yerr_trimmed, 
-	              friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
-	              t0s, duration, period, local_x_epochs)
+				  friendly_mask_trimmed, friendly_mask_fitted_planet_trimmed,
+				  t0s, duration, period, local_x_epochs)
 
 	# remove outliers in unmasked CoFiAM detrended lc
 	cofiam_x_no_outliers, cofiam_detrended_no_outliers = \
 	reject_outliers_everywhere(local_x, cofiam_detrended, local_yerr, 5*cadence, 5, 10)
 
 	plot_individual_outliers(local_x, cofiam_detrended, cofiam_x_no_outliers, cofiam_detrended_no_outliers,
-	                         t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
+							 t0s, period, float(6*duration/(24.))/period, 0.009, save_to_directory)
 
 	end = time.time()
 	print('CoFiAM detrending took ' + str(np.round(end - start, 2)) + ' seconds')
