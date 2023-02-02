@@ -100,19 +100,34 @@ def gp_method(x, y, yerr, mask, mask_fitted_planet, t0s, duration, period):
         mask_ii = mask[ii]
         mask_fitted_planet_ii = mask_fitted_planet[ii]
         
+        try:
+            gp_model = gp_new(x_ii[~mask_ii], y_ii[~mask_ii], yerr_ii[~mask_ii], x_ii)
+            
+           
+            gp_mod.append(gp_model['pred'])
+            gp_mod_all.extend(gp_model['pred'])
+            
+            
+        
+        
+        except:
+            print('GP failed for the ' + str(ii) + 'th epoch')
+            #gp failed for this epoch, just add nans of the same size
+            nan_array = np.empty(np.shape(y_ii))
+            nan_array[:] = np.nan
 
-        gp_model = gp_new(x_ii[~mask_ii], y_ii[~mask_ii], yerr_ii[~mask_ii], x_ii)
-        
-       
-        gp_mod.append(gp_model['pred'])
-        gp_mod_all.extend(gp_model['pred'])
-        
-        
+            gp_mod.append(nan_array)
+            gp_mod_all.extend(nan_array)
+            
+            
+
+
         x_all.extend(x_ii)
         y_all.extend(y_ii)
         yerr_all.extend(yerr_ii)
         mask_all.extend(mask_ii)
         mask_fitted_planet_all.extend(mask_fitted_planet_ii)
+
     
     #zoom into local window
     x_out, y_out, yerr_out, \
@@ -129,22 +144,31 @@ def gp_method(x, y, yerr, mask, mask_fitted_planet, t0s, duration, period):
     model_linear = []
     y_out_detrended = []
     for ii in range(0, len(model_out)):
-        x_ii = np.array(x_out[ii])
-        y_ii = np.array(y_out[ii])
-        mask_ii = np.array(mask_out[ii])
-        model_ii = np.array(model_out[ii])
+        x_ii = np.array(x_out[ii], dtype=float)
+        y_ii = np.array(y_out[ii], dtype=float)
+        mask_ii = np.array(mask_out[ii], dtype=bool)
+        model_ii = np.array(model_out[ii], dtype=float)
         
-        
-        y_ii_detrended = get_detrended_lc(y_ii, model_ii)
-        
-        linear_ii = polyAM_function(x_ii[~mask_ii], y_ii_detrended[~mask_ii], 1)
-        poly_interp = interp1d(x_ii[~mask_ii], linear_ii, bounds_error=False, fill_value='extrapolate')
-        model_ii_linear = poly_interp(x_ii)
-        
-        model_linear.append(model_ii_linear)
-        
-        y_ii_linear_detrended = get_detrended_lc(y_ii_detrended, model_ii_linear)
-        y_out_detrended.append(y_ii_linear_detrended)
+
+        try:
+            y_ii_detrended = get_detrended_lc(y_ii, model_ii)
+            
+            linear_ii = polyAM_function(x_ii[~mask_ii], y_ii_detrended[~mask_ii], 1)
+            poly_interp = interp1d(x_ii[~mask_ii], linear_ii, bounds_error=False, fill_value='extrapolate')
+            model_ii_linear = poly_interp(x_ii)
+            
+            model_linear.append(model_ii_linear)
+            
+            y_ii_linear_detrended = get_detrended_lc(y_ii_detrended, model_ii_linear)
+            y_out_detrended.append(y_ii_linear_detrended)
+
+        except:
+            print('GP failed for the ' + str(ii) + 'th epoch')
+            #GP failed for this epoch, just add nans of the same size
+            nan_array = np.empty(np.shape(y_ii))
+            nan_array[:] = np.nan
+
+            y_out_detrended.append(nan_array)
         
         
     detrended_lc = np.concatenate(y_out_detrended, axis=0)

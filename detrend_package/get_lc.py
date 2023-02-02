@@ -44,7 +44,6 @@ def tic_id_from_exoplanet_archive(other_id):
     a = "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=toi&select=toipfx,tid,pl_tranmid,pl_orbper,pl_trandurh&format=csv"
 
     exoplanets = pd.read_csv(a)
-    print(exoplanets)
 
     #rename columns
     column_dict = {
@@ -182,9 +181,6 @@ def get_transit_info(object_id):
             return transit_info
 
 
-
-
-            
 def get_light_curve(object_id, flux_type, TESS = False, Kepler = False, 
                     user_period = None, user_t0 = None, user_duration = None,
                     planet_number = 1, mask_width = 1.3):
@@ -435,4 +431,85 @@ def get_light_curve(object_id, flux_type, TESS = False, Kepler = False,
     return \
         np.array(xs), np.array(ys), np.array(ys_err), mask, mask_fitted_planet, \
         np.array(t0s_in_data), period, duration, quarters, crowding, flux_fraction
+
+
+
+def split_lc_around_transits(time, lc, lc_err, mask, mask_fitted_planet, outlier_figname, quarter_figname, star_id,
+                            cadence = None, outlier_window = None, outlier_sigma = 4):
+
+    if cadence == None:
+        cadence=determine_cadence(time)
+
+    if outlier_window == None:
+        outlier_window = 30*cadence
+    
+    time_out, flux_out, flux_err_out, mask_out, mask_fitted_planet_out, moving_median = \
+    reject_outliers_out_of_transit(time, lc, lc_err, mask, mask_fitted_planet, 30*cadence, 4)
+
+    plot_outliers(time, lc, time_out, flux_out, 
+                  moving_median, quarters_end, outlier_figname, star_id)
+    if show_plots: plt.show()
+
+    x_quarters, y_quarters, yerr_quarters, mask_quarters, mask_fitted_planet_quarters = \
+    split_around_problems(time_out, flux_out, flux_err_out, 
+                          mask_out, mask_fitted_planet_out, quarters_end)
+
+
+    plot_split_data(x_quarters, y_quarters, t0s, quarter_figname, star_id)
+    if show_plots: plt.show()
+
+    x_quarters_w_transits, y_quarters_w_transits, yerr_quarters_w_transits, \
+    mask_quarters_w_transits, mask_fitted_planet_quarters_w_transits = \
+    find_quarters_with_transits(x_quarters, y_quarters, yerr_quarters, 
+                                mask_quarters, mask_fitted_planet_quarters, t0s)
+
+
+
+
+    x_quarters_w_transits = np.concatenate(x_quarters_w_transits, axis=0, dtype=object)
+    y_quarters_w_transits = np.concatenate(y_quarters_w_transits, axis=0, dtype=object)
+    yerr_quarters_w_transits = np.concatenate(yerr_quarters_w_transits, axis=0, dtype=object)
+    mask_quarters_w_transits = np.concatenate(mask_quarters_w_transits, axis=0, dtype=object)
+    mask_fitted_planet_quarters_w_transits = np.concatenate(mask_fitted_planet_quarters_w_transits, axis=0, dtype=object)
+
+
+
+
+
+
+    mask_quarters_w_transits = np.array(mask_quarters_w_transits, dtype=bool)
+    mask_fitted_planet_quarters_w_transits = np.array(mask_fitted_planet_quarters_w_transits, dtype=bool)
+
+
+
+
+
+
+
+
+    x_transits, y_transits, yerr_transits, mask_transits, mask_fitted_planet_transits = split_around_transits(x_quarters_w_transits, 
+                                                                                                              y_quarters_w_transits, 
+                                                                                                              yerr_quarters_w_transits, 
+                                                                                                              mask_quarters_w_transits, 
+                                                                                                              mask_fitted_planet_quarters_w_transits, 
+                                                                                                              t0s, 1./2., period)
+    
+
+
+
+    if len(mask_transits)==1:
+      mask_transits = np.array(mask_transits, dtype=bool)
+      mask_fitted_planet_transits = np.array(mask_fitted_planet_transits, dtype=bool)
+
+
+    x_epochs = np.concatenate(x_transits, axis=0, dtype=object)
+    y_epochs = np.concatenate(y_transits, axis=0, dtype=object)
+    yerr_epochs = np.concatenate(yerr_transits, axis=0, dtype=object)
+    mask_epochs = np.concatenate(mask_transits, axis=0, dtype=object)
+    mask_fitted_planet_epochs = np.concatenate(mask_fitted_planet_transits, axis=0, dtype=object)
+
+
+    return x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs
+
+
     

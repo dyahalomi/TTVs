@@ -109,7 +109,7 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
     problem_path = save_to_directory + flux_type + '_problem_times.txt'
 
     if os.path.exists(problem_path):
-      print(flux_type+' '+'problem times for '+star_id+' planet number '+str(planet_number)+' found.')
+      print(flux_type+' '+'problem times for '+star_id+' planet number '+str(planet_number)+' found')
       with open(problem_path, 'r') as problem_file:
         problem_times = json.load(problem_file)
 

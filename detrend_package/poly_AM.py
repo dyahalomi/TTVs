@@ -68,15 +68,15 @@ def polyAM_iterative(times, fluxes, mask, mask_fitted_planet,
                 in_transit = False
                 out_transit = True
 
-            '''
-            elif index == len(mask_fitted_planet):
-                out_transit_index = index
-                
-                in_transit = False
-                out_transit = True
-            '''
-            
-    
+
+    #this was added in to solve the case of only an ingress      
+    try:
+        out_transit_index
+    except NameError:
+        out_transit_index = len(times)
+
+
+
     if in_transit_index == 0:
         no_pre_transit = True
     
@@ -159,24 +159,41 @@ def polynomial_method(x, y, yerr, mask, mask_fitted_planet, t0s, duration, perio
         local_end_x_ii = local_x[ii][len(local_x[ii])-1]
         
         
-        poly = polyAM_iterative(x_ii, y_ii, mask_ii, mask_fitted_planet_ii,
-                                local_start_x_ii, local_end_x_ii, max_degree=30)
 
-        
-        poly_interp = interp1d(x_ii[~mask_ii], poly[0], bounds_error=False, fill_value='extrapolate')
-        best_model = poly_interp(x_ii)
-        DWs.append(poly[2])
-        
-        
-        poly_mod.append(best_model)
-        poly_mod_all.extend(best_model)
-        
+        try:
+            poly = polyAM_iterative(x_ii, y_ii, mask_ii, mask_fitted_planet_ii,
+                                    local_start_x_ii, local_end_x_ii, max_degree=30)
+
+            
+            poly_interp = interp1d(x_ii[~mask_ii], poly[0], bounds_error=False, fill_value='extrapolate')
+            best_model = poly_interp(x_ii)
+            DWs.append(poly[2])
+            
+            
+            poly_mod.append(best_model)
+            poly_mod_all.extend(best_model)
+            
+
+
+        except:
+            print('polyAM failed for the ' + str(ii) + 'th epoch')
+            #gp failed for this epoch, just add nans of the same size
+            nan_array = np.empty(np.shape(y_ii))
+            nan_array[:] = np.nan
+
+            poly_mod.append(nan_array)
+            poly_mod_all.extend(nan_array)
+
+
+
+
         x_all.extend(x_ii)
         y_all.extend(y_ii)
         yerr_all.extend(yerr_ii)
         mask_all.extend(mask_ii)
         mask_fitted_planet_all.extend(mask_fitted_planet_ii)
-    
+            
+            
     
     #zoom into local window
     x_out, y_out, yerr_out, \
@@ -194,24 +211,34 @@ def polynomial_method(x, y, yerr, mask, mask_fitted_planet, t0s, duration, perio
     y_out_detrended = []
     x_out_detrended = []
     for ii in range(0, len(model_out)):
-        x_ii = np.array(x_out[ii])
-        y_ii = np.array(y_out[ii])
-        mask_ii = np.array(mask_out[ii])
-        model_ii = np.array(model_out[ii])
+        x_ii = np.array(x_out[ii], dtype=float)
+        y_ii = np.array(y_out[ii], dtype=float)
+        mask_ii = np.array(mask_out[ii], dtype=bool)
+        model_ii = np.array(model_out[ii], dtype=float)
         
         
         y_ii_detrended = get_detrended_lc(y_ii, model_ii)
         
-        linear_ii = polyAM_function(x_ii[~mask_ii], y_ii_detrended[~mask_ii], 1)
-        poly_interp = interp1d(x_ii[~mask_ii], linear_ii, bounds_error=False, fill_value='extrapolate')
-        model_ii_linear = poly_interp(x_ii)
-        
-        model_linear.append(model_ii_linear)
-        
-        y_ii_linear_detrended = get_detrended_lc(y_ii_detrended, model_ii_linear)
-        y_out_detrended.append(y_ii_linear_detrended)
-        x_out_detrended.append(x_ii)
-        
+
+
+        try:
+            linear_ii = polyAM_function(x_ii[~mask_ii], y_ii_detrended[~mask_ii], 1)
+            poly_interp = interp1d(x_ii[~mask_ii], linear_ii, bounds_error=False, fill_value='extrapolate')
+            model_ii_linear = poly_interp(x_ii)
+            
+            model_linear.append(model_ii_linear)
+            
+            y_ii_linear_detrended = get_detrended_lc(y_ii_detrended, model_ii_linear)
+            y_out_detrended.append(y_ii_linear_detrended)
+            x_out_detrended.append(x_ii)
+
+        except:
+            print('polyAM failed for the ' + str(ii) + 'th epoch')
+            #polyAM failed for this epoch, just add nans of the same size
+            nan_array = np.empty(np.shape(y_ii))
+            nan_array[:] = np.nan
+
+            y_out_detrended.append(nan_array)
         
 
         

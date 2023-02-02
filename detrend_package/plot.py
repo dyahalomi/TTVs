@@ -80,6 +80,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     ax.set_ylabel("intensity")
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
+    ax.ticklabel_format(useOffset=False) # disable scientific notation
     ax.set_title(object_id, fontsize = 27)
 
 
@@ -175,7 +176,7 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
 
 
 
-def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period, colors, duration, mask_width = 1.3, depth=None, figname=None):
+def plot_detrended_lc(xs, ys, detrend_labels, t0s_in_data, window, period, colors, duration, mask_width=1.3, depth=None, figname=None, title = None):
     '''
     inputs:
     x = times
@@ -196,7 +197,7 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
     
     '''
     import math    
-    plt.close("all") 
+        
 
             
     transit_windows = []
@@ -206,10 +207,15 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
     
     n_transit = np.arange(0, len(t0s_in_data), 1)
     
-    if len(ys) > 1:
-        fig, ax = plt.subplots(ncols = 3, nrows = math.ceil(len(t0s_in_data)/3), figsize = [18,len(t0s_in_data)*len(ys)/2])
+    if len(t0s_in_data) > 1:
+
+        if len(ys) == 1:
+            fig, ax = plt.subplots(ncols = 5, nrows = math.ceil(len(t0s_in_data)/5), figsize = [27,len(t0s_in_data)*len(ys)], sharey=True)    
+        else:
+            fig, ax = plt.subplots(ncols = 5, nrows = math.ceil(len(t0s_in_data)/5), figsize = [27,len(t0s_in_data)*len(ys)/4], sharey=True)
+
     else:
-        fig, ax = plt.subplots(ncols = 3, nrows = math.ceil(len(t0s_in_data)/3), figsize = [18,len(t0s_in_data)*len(ys)])
+        fig, ax = plt.subplots(ncols = 1, nrows = 1, figsize = [18,13], sharey=True)
 
     
     y_detrend = []
@@ -223,10 +229,7 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
         row = 0
         
         for ii in range(0, len(t0s_in_data)):
-            if len(t0s_in_data) <= 3:
-                ax_ii = ax[ii]#[column]
-            else:
-                ax_ii = ax[row][column]
+            ax_ii = ax[row][column]
 
             t0 = t0s_in_data[ii]
             
@@ -234,29 +237,32 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
             detrend_offset = 0
             for detrend_index in range(0, len(ys)):
         
-                x = xs
                 y_detrend = ys[detrend_index]
-                yerr = yerrs[detrend_index]
+                x = xs
                 
-                ax_ii.errorbar(x, y_detrend + detrend_offset, yerr = yerr, ls='', marker='o', markersize=5, color = colors[detrend_index], alpha = 0.63)
+                ax_ii.plot(x, y_detrend + detrend_offset, 'o', color = colors[detrend_index], alpha = 0.63)
                 
                 ax_ii.text(t0-(period*window)+.18, detrend_offset+.0018, 
                        detrend_labels[detrend_index], 
-                       color=colors[detrend_index], fontsize=13)
+                       color=colors[detrend_index], fontsize=18)
                 
                 detrend_offset += depth
                 
             ax_ii.axvline(transit_windows[ii][0], linewidth=1.8, color='k', alpha = 0.79, ls='--') 
             ax_ii.axvline(transit_windows[ii][1], linewidth=1.8, color='k', alpha = 0.79, ls='--')
 
-            ax_ii.set_xlabel("time [days]")
-            ax_ii.set_ylabel("intensity")
+            ax_ii.set_xlabel("time [KBJD]", fontsize = 18)
+            ax_ii.set_ylabel("intensity", fontsize = 18)
             ax_ii.set_xlim(t0-(period*window), t0+(period*window))
             ax_ii.set_ylim(-1.2*depth, depth*len(ys))
             ax_ii.tick_params(axis='x', rotation=45)
             
+    
+    
 
-            if column == 2:
+            
+
+            if column == 4:
                 column = 0
                 row += 1
             else:
@@ -268,34 +274,46 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
         detrend_offset = 0
         for detrend_index in range(0, len(ys)):
 
-            x = xs
             y_detrend = ys[detrend_index]
-            yerr = yerrs[detrend_index]
+            x = xs
 
-            ax.errorbar(x, y_detrend + detrend_offset, yerr=yerr, ls='', marker='o', markersize=5, color = colors[detrend_index], alpha = 0.63)
+            ax.plot(x, y_detrend + detrend_offset, 'o', color = colors[detrend_index], alpha = 0.63, markersize=9)
+            
+            ax.text(t0-(period*window)+.01, detrend_offset+.013, 
+                    detrend_labels[detrend_index], 
+                    color=colors[detrend_index], fontsize=13)
 
             detrend_offset += depth
 
         [ax.axvline(transit[0], linewidth=1.8, color='k', alpha = 0.79, ls='--') for transit in transit_windows]
         [ax.axvline(transit[1], linewidth=1.8, color='k', alpha = 0.79, ls='--') for transit in transit_windows]
-        ax.set_xlabel("time [days]")
-        ax.set_ylabel("intensity")
+        ax.set_xlabel("time [KBJD]", fontsize = 27)
+        ax.set_ylabel("intensity", fontsize = 27)
         ax.set_xlim(t0-(period*window), t0+(period*window))
 
 
-        ax.set_ylim(-0.01, 0.01*len(ys)+.01)
+        ax.set_ylim(-1.2*depth, depth*len(ys))
         ax.tick_params(axis='x', rotation=45)
-        ax_ii.text(t0-(period*window)+.18, detrend_offset+.0018, 
-                    detrend_labels[detrend_index], 
-                    color=colors[detrend_index], fontsize=13)
+        ax.ticklabel_format(useOffset=False)
+
+        
                             
 
     
         
     
+    if title:
+        fig.suptitle(title, fontsize = 36, y=1.01)
     
+    
+    
+    #fig.delaxes(ax[1][4])
+    fig.tight_layout()
+        
     if figname:
-        fig.savefig(figname)
+        fig.savefig(figname, bbox_inches='tight')
+        
+        
     
     
 
@@ -307,9 +325,11 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
 
 
 
-def plot_phase_fold_lc(time, lc, period, t0s, xlim):
+def plot_phase_fold_lc(time, lc, period, t0s, xlim, figname):
+
     plt.close("all")
-    plt.figure(figsize = [18,6])
+
+    fig = plt.figure(figsize = [18,6])
     x_fold = (
         time - t0s[0] + 0.5 * period
     ) % period - 0.5 * period
@@ -318,6 +338,9 @@ def plot_phase_fold_lc(time, lc, period, t0s, xlim):
     plt.ylabel("intensity [ppm]")
     plt.colorbar(label="time [days]")
     _ = plt.xlim(0.-(period/xlim), 0.+(period/xlim))
+
+    if figname:
+        fig.savefig(figname)
 
 
 

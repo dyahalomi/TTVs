@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(description="Looks up light curves for TESS and
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('object', type=str, help='TESS or Kepler identifier. ex: "toi-2088"')
 parser.add_argument('--flux_type', type=str, default='sap', help='Flux type as a string. Options: pdc, sap, both, or qlp.')
-parser.add_argument('--mission', type=str, default='TESS', help='Mission data select. ex: "TESS"')
+parser.add_argument('--mission', type=str, default='TESS', help='Mission data select. ex: "TESS" or "Kepler"')
 parser.add_argument('--planet_num', type=int, default=1, help='Which planet to look at in system. ex: 1')
 parser.add_argument('--save_to_dir', type=str, default='./', help='Directory path to save csvs and figures to.')
 parser.add_argument('-d', '--depth', default=0.02, help='Sets depth of detrended plots. Default is 0.02.')
