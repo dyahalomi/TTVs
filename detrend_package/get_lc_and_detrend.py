@@ -34,6 +34,8 @@ parser.add_argument('--polyAM', default='True', help='detrend via polyAM...True 
 parser.add_argument('--CoFiAM', default='True', help='detrend via CoFiAM...True or False')
 parser.add_argument('--local', default='True', help='detrend via local...True or False')
 parser.add_argument('--GP', default='True', help='detrend via GP...True or False')
+parser.add_argument('--use_sap_problem_times', default='True', help='tell the code whether to use SAP problem time for PDC also')
+
 
 
 args = vars(parser.parse_args())
@@ -57,6 +59,7 @@ input_polyAM = args['polyAM']
 input_CoFiAM = args['CoFiAM']
 input_GP = args['GP']
 input_local = args['local']
+input_use_sap_problem_times = args['use_sap_problem_times']
 
 
 
@@ -69,6 +72,11 @@ if input_polyAM == 'True':
     input_detrend_methods.append('polyAM')
 if input_local == 'True':
     input_detrend_methods.append('local')
+
+if input_use_sap_problem_times == 'True':
+    input_problem_times_default = 'use_sap'
+else:
+    input_problem_times_default = None
 
 
 # # # ---------------------------------------------- now the fun begins ! ! ! ------------------------------------------------ # # #
@@ -146,7 +154,8 @@ if flux_type == 'both':
         pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
         pdc_duration, pdc_cadence]]  = \
         find_sap_and_pdc_flux_jumps(input_id, path + '/', show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
-        user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, dont_bin=input_dont_bin) 
+        user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, 
+        dont_bin=input_dont_bin, problem_times_default=input_problem_times_default) 
 
 
         # now for detrending!
@@ -157,16 +166,6 @@ if flux_type == 'both':
         #if 'GP' in input_detrend_methods:
 
         
-        #[[sap_local_x, sap_local_y, sap_local_yerr, sap_local_mask, sap_local_mask_fitted_planet, \
-        #sap_local_detrended, sap_local_x_no_outliers, sap_local_detrended_no_outliers, \
-        #sap_poly_detrended, sap_poly_x_no_outliers, sap_poly_detrended_no_outliers, \
-        #sap_gp_detrended, sap_gp_x_no_outliers, sap_gp_detrended_no_outliers, \
-        #sap_cofiam_detrended, sap_cofiam_x_no_outliers, sap_cofiam_detrended_no_outliers], \
-        #[pdc_local_x, pdc_local_y, pdc_local_yerr, pdc_local_mask, pdc_local_mask_fitted_planet, \
-        #pdc_local_detrended, pdc_local_x_no_outliers, pdc_local_detrended_no_outliers, \
-        #pdc_poly_detrended, pdc_poly_x_no_outliers, pdc_poly_detrended_no_outliers, \
-        #pdc_gp_detrended, pdc_gp_x_no_outliers, pdc_gp_detrended_no_outliers, \
-        #pdc_cofiam_detrended, pdc_cofiam_x_no_outliers, pdc_cofiam_detrended_no_outliers]] = \
         
 
         detrended_lc_all_vals = \
@@ -218,28 +217,7 @@ if flux_type == 'both':
                    sap_detrend_sep_lc[2], pdc_detrend_sep_lc[2],
                    sap_detrend_sep_lc[3], pdc_detrend_sep_lc[3]]
 
-    '''
-    detrend_label = []
-    if 'local' in sap_detrend_methods_out:
-        detrend_label.append('local SAP')
-    if 'local' in pdc_detrend_methods_out:
-        detrend_label.append('local PDC')
 
-    if 'polyAM' in sap_detrend_methods_out:
-        detrend_label.append('polyAM SAP')
-    if 'polyAM' in pdc_detrend_methods_out:
-        detrend_label.append('polyAM PDC')
-
-    if 'GP' in sap_detrend_methods_out:
-        detrend_label.append('GP SAP')
-    if 'GP' in pdc_detrend_methods_out:
-        detrend_label.append('GP PDC')
-
-    if 'CoFiAM' in sap_detrend_methods_out:
-        detrend_label.append('CoFiAM SAP')
-    if 'CoFiAM' in pdc_detrend_methods_out:
-        detrend_label.append('CoFiAM PDC')
-    '''
     detrend_label = ['local SAP', 'local PDCSAP',
                      'polyAM SAP', 'polyAM PDCSAP',
                      'GP SAP', 'GP PDCSAP', 
@@ -297,10 +275,7 @@ if flux_type == 'both':
     yerr_detrended = detrended_lc['yerr']
     mask_detrended = detrended_lc['mask']
 
-    # #pulls in light curve
-    # pdc_time, _, _, _, _, \
-    # t0s, period, _, _, _, _  = \
-    # get_light_curve('toi-3855', 'pdcsap_flux', TESS=True, planet_number = 1)
+
 
     x, y, yerr, mask = np.array(x_detrended), np.array(method_marg_detrended), np.array(yerr_detrended), np.array(mask_detrended)
 
@@ -321,7 +296,8 @@ elif flux_type == 'pdc':
         show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
-        mask_width=input_mask_width, no_jump_times=True, dont_bin=input_dont_bin) 
+        mask_width=input_mask_width, no_jump_times=True, dont_bin=input_dont_bin,
+        problem_times_default=input_problem_times_default) 
 
     # now for detrending!
 

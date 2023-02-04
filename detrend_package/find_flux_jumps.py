@@ -19,7 +19,8 @@ from plot import *
 
 def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = False, Kepler = False, 
                     user_periods = None, user_t0s = None, user_durations = None,
-                    planet_number = 1, mask_width = 1.3, no_jump_times = False, dont_bin = False, data_name = None):
+                    planet_number = 1, mask_width = 1.3, no_jump_times = False, dont_bin = False, 
+                    data_name = None, problem_times_default = None):
 
 
 
@@ -106,7 +107,10 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 
 
     # check if problem times already exist
-    problem_path = save_to_directory + flux_type + '_problem_times.txt'
+    if problem_times_default == 'use_sap':
+      problem_path = save_to_directory + 'sap_flux_problem_times.txt'
+    else:
+      problem_path = save_to_directory + flux_type + '_problem_times.txt'
 
     if os.path.exists(problem_path):
       print(flux_type+' '+'problem times for '+star_id+' planet number '+str(planet_number)+' found')
@@ -130,16 +134,19 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 
 def find_sap_and_pdc_flux_jumps(star_id, save_to_directory, show_plots, TESS = False, Kepler = False, 
                                 user_periods = None, user_t0s = None, user_durations = None,
-                                planet_number = 1, mask_width = 1.3, dont_bin = False, data_name = None):
+                                planet_number = 1, mask_width = 1.3, dont_bin = False, 
+                                data_name = None, problem_times_default=None):
 
 
     sap_vals = find_flux_jumps(star_id, 'sap_flux', save_to_directory, show_plots, TESS = TESS, Kepler = Kepler, 
                                user_periods = user_periods, user_t0s = user_t0s, user_durations = user_durations,
-                               planet_number = planet_number, mask_width = mask_width, dont_bin = dont_bin, data_name=data_name)    
+                               planet_number = planet_number, mask_width = mask_width, dont_bin = dont_bin, 
+                               data_name=data_name, problem_times_default=problem_times_default)    
 
     pdc_vals = find_flux_jumps(star_id, 'pdcsap_flux', save_to_directory, show_plots, TESS = TESS, Kepler = Kepler, 
                                user_periods = user_periods, user_t0s = user_t0s, user_durations = user_durations,
-                               planet_number = planet_number, mask_width = mask_width, dont_bin = dont_bin, data_name=data_name)    
+                               planet_number = planet_number, mask_width = mask_width, dont_bin = dont_bin, 
+                               data_name=data_name, problem_times_default=problem_times_default)    
 
 
 
