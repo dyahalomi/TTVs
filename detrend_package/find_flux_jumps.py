@@ -19,7 +19,7 @@ from plot import *
 
 def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = False, Kepler = False, 
                     user_periods = None, user_t0s = None, user_durations = None,
-                    planet_number = 1, mask_width = 1.3, no_jump_times = False, dont_bin = False, 
+                    planet_number = 1, mask_width = 1.3, no_pdc_problem_times = True, dont_bin = False, 
                     data_name = None, problem_times_default = None):
 
 
@@ -108,25 +108,34 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 
     # check if problem times already exist
     if problem_times_default == 'use_sap':
+      print(1)
+      print('using sap problem times for pdc also')
       problem_path = save_to_directory + 'sap_flux_problem_times.txt'
     else:
+      print(2)
       problem_path = save_to_directory + flux_type + '_problem_times.txt'
 
     if os.path.exists(problem_path):
+      print(3)
       print(flux_type+' '+'problem times for '+star_id+' planet number '+str(planet_number)+' found')
       with open(problem_path, 'r') as problem_file:
         problem_times = json.load(problem_file)
 
-    elif no_jump_times:
-      problem_times = []
 
+    elif no_pdc_problem_times:
+      print(4)
+      if flux_type == 'pdcsap_flux':
+        print('assuming no pdc problem times')
+        problem_times = []
 
-    else: # if not, mark out problem times manually
-      _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, star_id, dont_bin = dont_bin, data_name=data_name)
-      # save problem times
-      with open(problem_path, 'w') as problem_file:
-        json.dump(problem_times, problem_file)
-      print(flux_type+' problem times saved as ' + problem_path)
+      # if not, mark out problem times manually
+      else: 
+        print(5)
+        _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, star_id, dont_bin = dont_bin, data_name=data_name)
+        # save problem times
+        with open(problem_path, 'w') as problem_file:
+          json.dump(problem_times, problem_file)
+        print(flux_type+' problem times saved as ' + problem_path)
 
     return x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, problem_times, t0s, period, duration, cadence
 
@@ -135,18 +144,18 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 def find_sap_and_pdc_flux_jumps(star_id, save_to_directory, show_plots, TESS = False, Kepler = False, 
                                 user_periods = None, user_t0s = None, user_durations = None,
                                 planet_number = 1, mask_width = 1.3, dont_bin = False, 
-                                data_name = None, problem_times_default=None):
+                                data_name = None, problem_times_default=None, no_pdc_problem_times=True):
 
 
     sap_vals = find_flux_jumps(star_id, 'sap_flux', save_to_directory, show_plots, TESS = TESS, Kepler = Kepler, 
                                user_periods = user_periods, user_t0s = user_t0s, user_durations = user_durations,
                                planet_number = planet_number, mask_width = mask_width, dont_bin = dont_bin, 
-                               data_name=data_name, problem_times_default=problem_times_default)    
+                               data_name=data_name, problem_times_default=problem_times_default, no_pdc_problem_times=no_pdc_problem_times)    
 
     pdc_vals = find_flux_jumps(star_id, 'pdcsap_flux', save_to_directory, show_plots, TESS = TESS, Kepler = Kepler, 
                                user_periods = user_periods, user_t0s = user_t0s, user_durations = user_durations,
                                planet_number = planet_number, mask_width = mask_width, dont_bin = dont_bin, 
-                               data_name=data_name, problem_times_default=problem_times_default)    
+                               data_name=data_name, problem_times_default=problem_times_default, no_pdc_problem_times=no_pdc_problem_times)    
 
 
 

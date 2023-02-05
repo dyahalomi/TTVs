@@ -34,7 +34,8 @@ parser.add_argument('--polyAM', default='True', help='detrend via polyAM...True 
 parser.add_argument('--CoFiAM', default='True', help='detrend via CoFiAM...True or False')
 parser.add_argument('--local', default='True', help='detrend via local...True or False')
 parser.add_argument('--GP', default='True', help='detrend via GP...True or False')
-parser.add_argument('--use_sap_problem_times', default='True', help='tell the code whether to use SAP problem time for PDC also')
+parser.add_argument('--use_sap_problem_times', default='False', help='use SAP problem times for PDC. True or False.')
+parser.add_argument('--no_pdc_problem_times', default='True', help='assume PDC needs no problem times.')
 
 
 
@@ -60,7 +61,7 @@ input_CoFiAM = args['CoFiAM']
 input_GP = args['GP']
 input_local = args['local']
 input_use_sap_problem_times = args['use_sap_problem_times']
-
+input_no_pdc_problem_times = args['no_pdc_problem_times']
 
 
 input_detrend_methods = []
@@ -77,6 +78,12 @@ if input_use_sap_problem_times == 'True':
     input_problem_times_default = 'use_sap'
 else:
     input_problem_times_default = None
+
+
+if input_no_pdc_problem_times == 'True':
+    input_no_pdc_problem_times = True
+else:
+    input_no_pdc_problem_times = False
 
 
 # # # ---------------------------------------------- now the fun begins ! ! ! ------------------------------------------------ # # #
@@ -155,7 +162,7 @@ if flux_type == 'both':
         pdc_duration, pdc_cadence]]  = \
         find_sap_and_pdc_flux_jumps(input_id, path + '/', show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
         user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, 
-        dont_bin=input_dont_bin, problem_times_default=input_problem_times_default) 
+        dont_bin=input_dont_bin, problem_times_default=input_problem_times_default, no_pdc_problem_times=input_no_pdc_problem_times) 
 
 
         # now for detrending!
@@ -296,8 +303,8 @@ elif flux_type == 'pdc':
         show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
-        mask_width=input_mask_width, no_jump_times=True, dont_bin=input_dont_bin,
-        problem_times_default=input_problem_times_default) 
+        mask_width=input_mask_width, no_pdc_problem_times=input_no_pdc_problem_times, 
+        dont_bin=input_dont_bin, problem_times_default=input_problem_times_default) 
 
     # now for detrending!
 
