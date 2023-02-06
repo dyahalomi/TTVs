@@ -45,13 +45,10 @@ def trim_jump_times(x, y, yerr, mask, mask_fitted_planet, t0s, period, jump_time
 			mask_fitted_planets = mask_fitted_planet_transits[ii]
 			
 			epoch_jump_times = []
-			#print(xs)
 			for j in range(len(jump_times)):
 				if jump_times[j] >= xs[0] and jump_times[j] <= xs[-1]: # if jump time falls within time range of epoch
 					epoch_jump_times.append(jump_times[j])
 
-			# print('epoch jump times are:')
-			# print(epoch_jump_times)
 
 			# should be in time order anyway
 			# there should be a max of two per epoch
@@ -141,119 +138,6 @@ def remove_trim_times(x, y, yerr, trim_times):
 	return x, y, yerr
 
 
-
-def add_nans_for_missing_data(sap_x_local, sap_detrended_lcs, sap_yerr_local, sap_mask_local, sap_mask_fitted_planet_local, 
-							  pdc_x_local, pdc_detrended_lcs, pdc_yerr_local, pdc_mask_local, pdc_mask_fitted_planet_local):
-	
-	
-	print('pdc length in: ', str(len(pdc_x_local)))
-	print('sap length in: ', str(len(sap_x_local)))
-	print('---')
-	
-	
-	for ii in range(0, len(pdc_x_local)):
-		time = pdc_x_local[ii]
-		yerr = pdc_yerr_local[ii]
-		mask = pdc_mask_local[ii]
-		mask_fitted_planet = pdc_mask_fitted_planet_local[ii]
-		if time not in sap_x_local:
-			for kk in range(0, len(sap_x_local)):
-				if sap_x_local[kk] > time:
-					sap_x_local = np.insert(sap_x_local, kk, time)
-					sap_yerr_local = np.insert(sap_yerr_local, kk, yerr)
-					sap_mask_local = np.insert(sap_mask_local, kk, mask)
-					sap_mask_fitted_planet_local = np.insert(sap_mask_fitted_planet_local, kk, mask_fitted_planet)
-					for jj in range(0, len(sap_detrended_lcs)):
-						sap_detrended_lcs[jj] = np.insert(sap_detrended_lcs[jj], kk, np.nan)
-					
-					break
-				
-				elif kk + 1  == len(sap_x_local):
-					sap_x_local = np.insert(sap_x_local, kk+1, time)
-					sap_yerr_local = np.insert(sap_yerr_local, kk+1, yerr)
-					sap_mask_local = np.insert(sap_mask_local, kk+1, mask)
-					sap_mask_fitted_planet_local = np.insert(sap_mask_fitted_planet_local, kk+1, mask_fitted_planet)
-					for jj in range(0, len(sap_detrended_lcs)):
-						sap_detrended_lcs[jj] = np.insert(sap_detrended_lcs[jj], kk+1, np.nan)
-					
-					break
-			
-			
-	
-	
-	for ii in range(0, len(sap_x_local)):
-		time = sap_x_local[ii]
-		yerr = sap_yerr_local[ii]
-		mask = sap_mask_local[ii]
-		mask_fitted_planet = sap_mask_fitted_planet_local[ii]
-		if time not in pdc_x_local:
-			for kk in range(0, len(pdc_x_local)):
-				if pdc_x_local[kk] > time:
-					pdc_x_local = np.insert(pdc_x_local, kk, time)
-					pdc_yerr_local = np.insert(pdc_yerr_local, kk, yerr)
-					pdc_mask_local = np.insert(pdc_mask_local, kk, mask)
-					pdc_mask_fitted_planet_local = np.insert(pdc_mask_fitted_planet_local, kk, mask_fitted_planet)
-					for jj in range(0, len(pdc_detrended_lcs)):
-						pdc_detrended_lcs[jj] = np.insert(pdc_detrended_lcs[jj], kk, np.nan)
-					
-					break
-				
-				
-				elif kk + 1 == len(pdc_x_local):
-					pdc_x_local = np.insert(pdc_x_local, kk+1, time)
-					pdc_yerr_local = np.insert(pdc_yerr_local, kk+1, yerr)
-					pdc_mask_local = np.insert(pdc_mask_local, kk+1, mask)
-					pdc_mask_fitted_planet_local = np.insert(pdc_mask_fitted_planet_local, kk+1, mask_fitted_planet)
-					for jj in range(0, len(pdc_detrended_lcs)):
-						pdc_detrended_lcs[jj] = np.insert(pdc_detrended_lcs[jj], kk+1, np.nan)
-					
-					break
-
-	
-					
-	
-	print('pdc length out: ', str(len(pdc_x_local)))
-	print('sap length out: ', str(len(sap_x_local)))
-	
-
-			
-	print('')
-	print('')
-	print('')
-	if (pdc_x_local == sap_x_local).all():
-		x_detrended = pdc_x_local
-		
-	else:
-		print("ERROR, pdc and sap x arrays aren't the same")
-		
-
-	
-	yerr_detrended = np.nanmean([pdc_yerr_local, sap_yerr_local], axis=0)
-	
-	if (pdc_mask_local == sap_mask_local).all():
-		mask_detrended = pdc_mask_local
-		
-	else:
-		for ii in range(0, len(pdc_mask_local)):
-			if pdc_mask_local[ii] != sap_mask_local[ii]:
-				print(pdc_x_local[ii], pdc_mask_local[ii])
-				print(sap_x_local[ii], sap_mask_local[ii])
-					
-				print('')
-		print("ERROR, pdc and sap mask arrays aren't the same")
-		
-		
-	
-	if (pdc_mask_fitted_planet_local == sap_mask_fitted_planet_local).all():
-		mask_fitted_planet_detrended = pdc_mask_fitted_planet_local
-		
-	else:
-		print("ERROR, pdc and sap mask for fitted planet arrays aren't the same")
-		
-	
-				
-	   
-	return(x_detrended, sap_detrended_lcs, pdc_detrended_lcs, yerr_detrended, mask_detrended, mask_fitted_planet_detrended)
 
 
 
@@ -437,7 +321,6 @@ def detrend_all_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitte
 def detrend_variable_methods(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, problem_times,
 	t0s, period, duration, cadence, save_to_directory, show_plots, detrend_methods):
 
-	print(len(x_epochs))
 	
 	x_trimmed, y_trimmed, yerr_trimmed, mask_trimmed, mask_fitted_planet_trimmed = \
 	trim_jump_times(x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, t0s, period, problem_times)

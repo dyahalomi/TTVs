@@ -131,8 +131,8 @@ else:
 # check if we should run both pdc and sap flux
 if flux_type == 'both':
 
-
-    # check if problem times already exist
+    '''
+    # check if detrended lc already exist
     detrendec_lc_saved = path + '/detrended.csv'
 
 
@@ -149,59 +149,59 @@ if flux_type == 'both':
 
         #this just pulls in period and duration from exofop for plotting purposes
         _, _, _, _, _, pdc_t0s, pdc_period, pdc_duration, _, _, _ = \
-        get_light_curve(input_id, 'pdcsap_flux', planet_number = input_planet_number, TESS=True)
+        get_light_curve(input_id, 'pdcsap_flux', planet_number = input_planet_number, TESS=tess_bool, Kepler=kepler_bool)
 
     else:
-        print('detrended lc for '+input_id+' planet number '+str(input_planet_number)+' not found')
-        #pulls in light curve
-        [[sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
-        sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \
-        sap_duration, sap_cadence], \
-        [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
-        pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
-        pdc_duration, pdc_cadence]]  = \
-        find_sap_and_pdc_flux_jumps(input_id, path + '/', show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
-        user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, 
-        dont_bin=input_dont_bin, problem_times_default=input_problem_times_default, no_pdc_problem_times=input_no_pdc_problem_times) 
+    '''
+    #print('detrended lc for '+input_id+' planet number '+str(input_planet_number)+' not found')
+    #pulls in light curve
+    [[sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
+    sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \
+    sap_duration, sap_cadence], \
+    [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
+    pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
+    pdc_duration, pdc_cadence]]  = \
+    find_sap_and_pdc_flux_jumps(input_id, path + '/', show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
+    user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, 
+    dont_bin=input_dont_bin, problem_times_default=input_problem_times_default, no_pdc_problem_times=input_no_pdc_problem_times) 
 
 
-        # now for detrending!
-        print('Detrending now.')
+    # now for detrending!
+    print('')
+    print('')
+    print('detrending now')
+    print('--------------')
+    print('')
+    
+    
+
+    detrended_lc_all_vals = \
+    detrend_sap_and_pdc(sap_values = [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
+    sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, sap_duration, sap_cadence],
+    pdc_values = [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
+    pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
+    pdc_duration, pdc_cadence],
+    save_dir = path + '/', pop_out_plots = input_show_plots,
+    detrend_methods = input_detrend_methods)
+
+    sap_detrend_methods_out = detrended_lc_all_vals[0]
+    pdc_detrend_methods_out = detrended_lc_all_vals[1]
+
+    # now to add nans, in order to make sure pdc and sap arrays are the same length
+    #x_detrended,\
+    #[sap_local_detrended2, sap_poly_detrended2, sap_cofiam_detrended2, sap_gp_detrended2],\
+    #[pdc_local_detrended2, pdc_poly_detrended2, pdc_cofiam_detrended2, pdc_gp_detrended2],\
+    #yerr_detrended, mask_detrended, mask_fitted_planet_detrended = \
+    
 
 
-        #detrended_sep_lc = []
-        #if 'GP' in input_detrend_methods:
-
-        
-        
-
-        detrended_lc_all_vals = \
-        detrend_sap_and_pdc(sap_values = [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
-        sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, sap_duration, sap_cadence],
-        pdc_values = [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
-        pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
-        pdc_duration, pdc_cadence],
-        save_dir = path + '/', pop_out_plots = input_show_plots,
-        detrend_methods = input_detrend_methods)
-
-        sap_detrend_methods_out = detrended_lc_all_vals[0]
-        pdc_detrend_methods_out = detrended_lc_all_vals[1]
-
-        # now to add nans, in order to make sure pdc and sap arrays are the same length
-        #x_detrended,\
-        #[sap_local_detrended2, sap_poly_detrended2, sap_cofiam_detrended2, sap_gp_detrended2],\
-        #[pdc_local_detrended2, pdc_poly_detrended2, pdc_cofiam_detrended2, pdc_gp_detrended2],\
-        #yerr_detrended, mask_detrended, mask_fitted_planet_detrended = \
-        
-
-
-        x_detrended,sap_detrend_sep_lc, pdc_detrend_sep_lc,\
-        yerr_detrended, mask_detrended, mask_fitted_planet_detrended = \
-        add_nans_for_missing_data(
-            detrended_lc_all_vals[2][0], [detrended_lc_all_vals[2][5], detrended_lc_all_vals[2][8], detrended_lc_all_vals[2][11], detrended_lc_all_vals[2][14]], 
-            detrended_lc_all_vals[2][2], detrended_lc_all_vals[2][3], detrended_lc_all_vals[2][4],
-            detrended_lc_all_vals[3][0], [detrended_lc_all_vals[3][5], detrended_lc_all_vals[3][8], detrended_lc_all_vals[3][11], detrended_lc_all_vals[3][14]], 
-            detrended_lc_all_vals[3][2], detrended_lc_all_vals[3][3], detrended_lc_all_vals[3][4])
+    x_detrended,sap_detrend_sep_lc, pdc_detrend_sep_lc,\
+    yerr_detrended, mask_detrended, mask_fitted_planet_detrended = \
+    add_nans_for_missing_data(
+        detrended_lc_all_vals[2][0], [detrended_lc_all_vals[2][5], detrended_lc_all_vals[2][8], detrended_lc_all_vals[2][11], detrended_lc_all_vals[2][14]], 
+        detrended_lc_all_vals[2][2], detrended_lc_all_vals[2][3], detrended_lc_all_vals[2][4],
+        detrended_lc_all_vals[3][0], [detrended_lc_all_vals[3][5], detrended_lc_all_vals[3][8], detrended_lc_all_vals[3][11], detrended_lc_all_vals[3][14]], 
+        detrended_lc_all_vals[3][2], detrended_lc_all_vals[3][3], detrended_lc_all_vals[3][4])
 
 
 
@@ -307,6 +307,18 @@ elif flux_type == 'pdc':
         dont_bin=input_dont_bin, problem_times_default=input_problem_times_default) 
 
     # now for detrending!
+    print('')
+    print('')
+    print('detrending now')
+    print('--------------')
+    print('')
+
+    detrended_lc_all_vals = \
+    detrend_one_lc(lc_values = [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
+    pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
+    pdc_duration, pdc_cadence],
+    save_dir = path + '/', pop_out_plots = input_show_plots,
+    detrend_methods = input_detrend_methods)
 
 
     [pdc_local_x, pdc_local_y, pdc_local_yerr, pdc_local_mask, pdc_local_mask_fitted_planet, \
@@ -314,12 +326,7 @@ elif flux_type == 'pdc':
     pdc_poly_detrended, pdc_poly_x_no_outliers, pdc_poly_detrended_no_outliers, \
     pdc_gp_detrended, pdc_gp_x_no_outliers, pdc_gp_detrended_no_outliers, \
     pdc_cofiam_detrended, pdc_cofiam_x_no_outliers, pdc_cofiam_detrended_no_outliers] = \
-    detrend_one_lc(lc_values = [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
-    pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
-    pdc_duration, pdc_cadence],
-    save_dir = path + '/', pop_out_plots = input_show_plots,
-    detrend_methods = input_detrend_methods)
-
+    detrended_lc_all_vals[1]
 
     x_detrended = pdc_local_x
 
@@ -415,6 +422,19 @@ elif flux_type == 'sap':
         mask_width=input_mask_width, dont_bin=input_dont_bin) 
 
     # now for detrending!
+    print('')
+    print('')
+    print('detrending now')
+    print('--------------')
+    print('')
+
+
+    detrended_lc_all_vals = \
+    detrend_one_lc(lc_values = [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
+    sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, sap_duration, sap_cadence],
+    save_dir = path + '/', pop_out_plots = input_show_plots,
+    detrend_methods = input_detrend_methods)
+
 
 
     [sap_local_x, sap_local_y, sap_local_yerr, sap_local_mask, sap_local_mask_fitted_planet, \
@@ -422,10 +442,8 @@ elif flux_type == 'sap':
     sap_poly_detrended, sap_poly_x_no_outliers, sap_poly_detrended_no_outliers, \
     sap_gp_detrended, sap_gp_x_no_outliers, sap_gp_detrended_no_outliers, \
     sap_cofiam_detrended, sap_cofiam_x_no_outliers, sap_cofiam_detrended_no_outliers] = \
-    detrend_one_lc(lc_values = [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
-    sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, sap_duration, sap_cadence],
-    save_dir = path + '/', pop_out_plots = input_show_plots,
-    detrend_methods = input_detrend_methods)
+    detrended_lc_all_vals[1]
+
 
     x_detrended = sap_local_x
 
@@ -437,10 +455,10 @@ elif flux_type == 'sap':
     red2, red1 = '#770737', '#EC8B80'
 
 
-    colors = [red2,
-              blue2,
-              green2,
-              purple2]
+    colors = [red1,
+              blue1,
+              green1,
+              purple1]
 
     y_detrended = [sap_local_detrended,
                    sap_poly_detrended,

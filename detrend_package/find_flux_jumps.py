@@ -108,34 +108,37 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 
     # check if problem times already exist
     if problem_times_default == 'use_sap':
-      print(1)
       print('using sap problem times for pdc also')
       problem_path = save_to_directory + 'sap_flux_problem_times.txt'
     else:
-      print(2)
       problem_path = save_to_directory + flux_type + '_problem_times.txt'
 
     if os.path.exists(problem_path):
-      print(3)
       print(flux_type+' '+'problem times for '+star_id+' planet number '+str(planet_number)+' found')
       with open(problem_path, 'r') as problem_file:
         problem_times = json.load(problem_file)
 
 
     elif no_pdc_problem_times:
-      print(4)
       if flux_type == 'pdcsap_flux':
         print('assuming no pdc problem times')
         problem_times = []
 
       # if not, mark out problem times manually
       else: 
-        print(5)
         _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, star_id, dont_bin = dont_bin, data_name=data_name)
         # save problem times
         with open(problem_path, 'w') as problem_file:
           json.dump(problem_times, problem_file)
         print(flux_type+' problem times saved as ' + problem_path)
+
+    # if not, mark out problem times manually for both pdc and sap
+    else: 
+      _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, star_id, dont_bin = dont_bin, data_name=data_name)
+      # save problem times
+      with open(problem_path, 'w') as problem_file:
+        json.dump(problem_times, problem_file)
+      print(flux_type+' problem times saved as ' + problem_path)
 
     return x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, problem_times, t0s, period, duration, cadence
 
